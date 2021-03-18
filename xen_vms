@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# local Agent plugin for checking xen hosts
+#
+# To be placed at  /usr/lib/check_mk_agent/plugins/ directory of the xen base host.
+
+
+look_for_xen()
+{
+if ps -ef | grep xen | grep -v grep 1>/dev/null || test -x /etc/init.d/xend 2>/dev/null
+  then
+     return 0
+fi
+return 1
+}
+
+setup_cmds()
+{
+
+
+running_vms=error
+
+vmlist=$(xl list | grep -v ^Name)
+running_vms=$( virsh list --state-running --name | egrep -v '(Name|Domain-0)'  | awk '{print $1}' )
+# get the total and max memory
+XMEM=$(xl info | egrep '(total_m|free_m)' | awk '{print $3}')
+# add in dom0 ram
+XMEM="$XMEM $(echo "$vmlist" | awk '/Domain-0/ {print $3}')"
+
+if [ $? != 0 ]; then
+    echo "xend is broken"
+    exit 1
+fi
+
+export running_vms XMEM
+
+}
+
+look_for_xen &&
+setup_cmds &&
+echo "<<<xen_vms>>>" &&
+for vm in $running_vms
+  do
+   echo "vm $vm running"
+done
+echo mem $XMEM
