@@ -11,9 +11,9 @@ from .agent_based_api.v1 import *
 #    (Service(item="VM %s" % line[1], parameters={}) for line in section if line[0] == "vm")
 
 def discover_xen_vms(section):
-    for xentype, vmname, status in section:
-        if xentype == "vm":
-              yield Service(item=vmname)
+    for line in section:
+        if line[0] == "vm":
+              yield Service(item=line[1])
 
 def check_xen_vms(item, section):
     for line in section:
